@@ -15,15 +15,10 @@ GOBIN="$(go env GOPATH)/bin"
 echo "Installing doc-helper..."
 go install github.com/onurkerem/doc-helper@latest
 
-case ":$PATH:" in
-	*":$GOBIN:"*)
-		echo "Installed: $GOBIN/doc-helper"
-		;;
-	*)
-		echo "" >> ~/.zshrc
-		echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.zshrc
-		echo "Added $GOBIN to PATH in ~/.zshrc"
-		echo "Installed: $GOBIN/doc-helper"
-		echo "Run 'source ~/.zshrc' or open a new terminal to use doc-helper"
-		;;
-esac
+if ! grep -q 'go/bin' ~/.zshrc 2>/dev/null; then
+	printf '\nexport PATH="$HOME/go/bin:$PATH"\n' >> ~/.zshrc
+	echo "Added $GOBIN to PATH in ~/.zshrc"
+fi
+
+echo "Installed: $GOBIN/doc-helper"
+echo "Run 'source ~/.zshrc' or open a new terminal to use doc-helper"
