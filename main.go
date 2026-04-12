@@ -16,11 +16,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	root, err := filepath.Abs(os.Args[1])
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error resolving path: %v\n", err)
-		os.Exit(1)
-	}
+	root := os.Args[1]
 
 	info, err := os.Stat(root)
 	if err != nil {
@@ -60,7 +56,8 @@ func main() {
 		if i > 0 {
 			sb.WriteString("\n")
 		}
-		fmt.Fprintf(&sb, "<!-- %s -->\n", path)
+		rel, _ := filepath.Rel(".", path)
+		fmt.Fprintf(&sb, "<!-- %s -->\n", rel)
 		sb.Write(content)
 		if len(content) > 0 && content[len(content)-1] != '\n' {
 			sb.WriteString("\n")
