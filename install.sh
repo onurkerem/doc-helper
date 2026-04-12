@@ -13,7 +13,7 @@ fi
 GOBIN="$(go env GOPATH)/bin"
 
 echo "Installing doc-helper..."
-go install github.com/onurkerem/doc-helper@latest
+GOPROXY=direct go install github.com/onurkerem/doc-helper@latest
 
 if ! grep -q 'go/bin' ~/.zshrc 2>/dev/null; then
 	printf '\nexport PATH="$HOME/go/bin:$PATH"\n' >> ~/.zshrc
