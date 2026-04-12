@@ -5,7 +5,8 @@
 set -e
 
 if ! command -v go &>/dev/null; then
-	echo "Error: Go is not installed. Install it from https://go.dev/dl/"
+	echo "Error: Go is not installed."
+	echo "Install it with: brew install go"
 	exit 1
 fi
 
