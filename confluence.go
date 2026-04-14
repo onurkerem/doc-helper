@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -82,7 +83,7 @@ func (c *ConfluenceClient) doRequest(method, path string, payload any) ([]byte, 
 	}
 
 	if resp.StatusCode == 404 {
-		return nil, errNotFound
+		return nil, fmt.Errorf("%w: %s", errNotFound, string(respBody))
 	}
 
 	if resp.StatusCode >= 400 {
@@ -107,7 +108,7 @@ func (c *ConfluenceClient) GetPage(pageID string) (*ConfluencePage, error) {
 		return json.Unmarshal(data, &result)
 	})
 
-	if err == errNotFound {
+	if errors.Is(err, errNotFound) {
 		return nil, nil
 	}
 	if err != nil {
