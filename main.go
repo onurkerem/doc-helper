@@ -2,28 +2,33 @@ package main
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 )
 
 func main() {
 	var root string
 	var excludes []string
+	var confluence bool
+	var dryRun bool
 
 	args := os.Args[1:]
 	for i := 0; i < len(args); i++ {
-		if args[i] == "--exclude" {
+		switch args[i] {
+		case "--exclude":
 			if i+1 >= len(args) {
 				fmt.Fprintf(os.Stderr, "Error: --exclude requires a value\n")
 				os.Exit(1)
 			}
 			i++
 			excludes = append(excludes, strings.Split(args[i], ",")...)
-		} else {
+		case "--confluence":
+			confluence = true
+		case "--dry-run":
+			dryRun = true
+		default:
 			if root != "" {
 				fmt.Fprintf(os.Stderr, "Error: unexpected argument %s\n", args[i])
 				os.Exit(1)
@@ -33,7 +38,7 @@ func main() {
 	}
 
 	if root == "" {
-		fmt.Fprintf(os.Stderr, "Usage: doc-helper <path> [--exclude <dir>[,<dir>...]]\n")
+		fmt.Fprintf(os.Stderr, "Usage: doc-helper <path> [--exclude <dir>[,<dir>...]] [--confluence] [--dry-run]\n")
 		os.Exit(1)
 	}
 
@@ -47,44 +52,41 @@ func main() {
 		os.Exit(1)
 	}
 
-	var mdFiles []string
-	filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			if slices.Contains(excludes, d.Name()) {
-				return fs.SkipDir
-			}
-			return nil
-		}
-		if strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
-			mdFiles = append(mdFiles, path)
-		}
-		return nil
-	})
+	result, err := ScanDirectory(root, excludes)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error scanning directory: %v\n", err)
+		os.Exit(1)
+	}
 
-	if len(mdFiles) == 0 {
+	if len(result.Files) == 0 {
 		fmt.Fprintf(os.Stderr, "No markdown files found in %s\n", root)
 		os.Exit(1)
 	}
 
-	slices.Sort(mdFiles)
+	// Clipboard (existing behavior)
+	copyToClipboard(root, result)
 
-	var sb strings.Builder
-	for i, path := range mdFiles {
-		content, err := os.ReadFile(path)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error reading %s: %v\n", path, err)
+	// Confluence sync
+	if confluence {
+		absRoot, _ := filepath.Abs(root)
+		if err := runConfluenceSync(absRoot, excludes, dryRun); err != nil {
+			fmt.Fprintf(os.Stderr, "Confluence sync error: %v\n", err)
 			os.Exit(1)
 		}
+	}
+}
+
+func copyToClipboard(root string, result *ScanResult) {
+	var sb strings.Builder
+	for i, file := range result.Files {
+		fullPath := filepath.Join(root, file.RelPath)
 		if i > 0 {
 			sb.WriteString("\n")
 		}
-		rel, _ := filepath.Rel(".", path)
+		rel, _ := filepath.Rel(".", fullPath)
 		fmt.Fprintf(&sb, "<!-- %s -->\n", rel)
-		sb.Write(content)
-		if len(content) > 0 && content[len(content)-1] != '\n' {
+		sb.WriteString(file.Content)
+		if len(file.Content) > 0 && file.Content[len(file.Content)-1] != '\n' {
 			sb.WriteString("\n")
 		}
 	}
@@ -96,5 +98,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Copied %d markdown file(s) to clipboard.\n", len(mdFiles))
+	fmt.Printf("Copied %d markdown file(s) to clipboard.\n", len(result.Files))
+}
+
+func runConfluenceSync(absRoot string, excludes []string, dryRun bool) error {
+	cfg, err := LoadConfig()
+	if err != nil {
+		return fmt.Errorf("loading config: %w", err)
+	}
+
+	syncCfg := cfg.FindSync(absRoot)
+	if syncCfg == nil {
+		return fmt.Errorf("path %s is not configured for Confluence sync. Add it to %s", absRoot, ConfigPath())
+	}
+
+	return RunSync(syncCfg, absRoot, excludes, dryRun)
 }

@@ -2,6 +2,8 @@
 
 Concatenate all markdown files in a directory and copy the result to your clipboard.
 
+Optionally sync markdown content to Confluence, creating a matching page hierarchy.
+
 Built for macOS.
 
 ## Install / Update
@@ -13,7 +15,7 @@ curl -fsSL https://raw.githubusercontent.com/onurkerem/doc-helper/main/install.s
 ## Usage
 
 ```bash
-doc-helper <path> [--exclude <dir>[,<dir>...]]
+doc-helper <path> [--exclude <dir>[,<dir>...]] [--confluence] [--dry-run]
 ```
 
 Output copied to clipboard:
@@ -38,6 +40,81 @@ doc-helper <path> --exclude node_modules --exclude .git
 # Comma-separated
 doc-helper <path> --exclude node_modules,.git,vendor
 ```
+
+### Confluence Sync
+
+Use `--confluence` to sync your markdown files as Confluence pages alongside the clipboard copy.
+
+```bash
+doc-helper ~/my-docs --confluence
+doc-helper ~/my-docs --confluence --dry-run   # preview without creating pages
+```
+
+Given this directory structure:
+
+```
+~/my-docs/
+  overview.md
+  getting-started/
+    installation.md
+    configuration.md
+  guides/
+    api-usage.md
+```
+
+And a configured parent page "Documentation", doc-helper creates:
+
+```
+Documentation (existing, not modified)
+├── Overview                (content from overview.md)
+├── getting-started         (empty container page)
+│   ├── Installation        (content from installation.md)
+│   └── Configuration       (content from configuration.md)
+└── guides                  (empty container page)
+    └── API Usage           (content from api-usage.md)
+```
+
+Page titles come from the first `# Heading` in each file. Directories become empty container pages.
+
+#### Setup
+
+1. Create the config directory:
+
+   ```bash
+   mkdir -p ~/.doc-helper
+   ```
+
+2. Create `~/.doc-helper/config.json`:
+
+   ```json
+   {
+     "syncs": [
+       {
+         "path": "/Users/you/my-docs",
+         "confluence_base_url": "https://yourcompany.atlassian.net/wiki",
+         "email": "you@company.com",
+         "api_token": "YOUR_API_TOKEN",
+         "parent_page_id": "123456"
+       }
+     ]
+   }
+   ```
+
+3. Get your Confluence API token:
+   - Go to https://id.atlassian.com/manage-profile/security/api-tokens
+   - Create a token and paste it in the config
+
+4. Find the parent page ID from the page URL:
+   - `https://yourcompany.atlassian.net/wiki/spaces/PROJ/pages/123456/Page+Title`
+   - The page ID is `123456`
+
+#### How it works
+
+- On first run, pages are created under the configured parent page
+- On subsequent runs, only changed files are updated (tracked by content hash)
+- State is stored in `~/.doc-helper/state.json` (auto-managed)
+- If state is lost, existing pages are detected by title to avoid duplicates
+- `--dry-run` shows what would happen without making API calls
 
 ## License
 
