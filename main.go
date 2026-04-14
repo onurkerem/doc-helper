@@ -11,12 +11,31 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintf(os.Stderr, "Usage: doc-helper <path>\n")
-		os.Exit(1)
+	var root string
+	var excludes []string
+
+	args := os.Args[1:]
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--exclude" {
+			if i+1 >= len(args) {
+				fmt.Fprintf(os.Stderr, "Error: --exclude requires a value\n")
+				os.Exit(1)
+			}
+			i++
+			excludes = append(excludes, strings.Split(args[i], ",")...)
+		} else {
+			if root != "" {
+				fmt.Fprintf(os.Stderr, "Error: unexpected argument %s\n", args[i])
+				os.Exit(1)
+			}
+			root = args[i]
+		}
 	}
 
-	root := os.Args[1]
+	if root == "" {
+		fmt.Fprintf(os.Stderr, "Usage: doc-helper <path> [--exclude <dir>[,<dir>...]]\n")
+		os.Exit(1)
+	}
 
 	info, err := os.Stat(root)
 	if err != nil {
@@ -33,7 +52,13 @@ func main() {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
+		if d.IsDir() {
+			if slices.Contains(excludes, d.Name()) {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
 			mdFiles = append(mdFiles, path)
 		}
 		return nil
