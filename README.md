@@ -113,6 +113,7 @@ Page titles come from the first `# Heading` in each file. Directories become emp
 
 #### How it works
 
+- Sync roots are resolved to the directory names stored on disk (macOS APFS is typically case-insensitive but case-preserving, so `documents` and `Documents` in a path match the same folder). The `path` in `config.json` does not need to match letter case exactly, and CLI arguments are normalized the same way.
 - On first run, pages are created under the configured parent page
 - On subsequent runs, only changed files are updated (tracked by content hash)
 - State is stored in `~/.doc-helper/state.json` (auto-managed)

@@ -76,7 +76,14 @@ func main() {
 
 	// Confluence sync
 	if confluence {
-		absRoot, _ := filepath.Abs(root)
+		absRoot, err := filepath.Abs(root)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		if canon, err := NormalizeSyncRoot(root); err == nil {
+			absRoot = canon
+		}
 		if err := runConfluenceSync(absRoot, excludes, dryRun, force); err != nil {
 			fmt.Fprintf(os.Stderr, "Confluence sync error: %v\n", err)
 			os.Exit(1)

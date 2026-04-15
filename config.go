@@ -54,8 +54,14 @@ func LoadConfig() (*Config, error) {
 }
 
 func (c *Config) FindSync(absPath string) *SyncConfig {
+	canon, errAbs := NormalizeSyncRoot(absPath)
 	for i := range c.Syncs {
-		if c.Syncs[i].Path == absPath {
+		cfgPath := c.Syncs[i].Path
+		cfgCanon, errCfg := NormalizeSyncRoot(cfgPath)
+		if errAbs == nil && errCfg == nil && cfgCanon == canon {
+			return &c.Syncs[i]
+		}
+		if pathsEquivalentForSync(cfgPath, absPath) {
 			return &c.Syncs[i]
 		}
 	}

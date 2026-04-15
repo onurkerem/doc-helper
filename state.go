@@ -57,7 +57,7 @@ func SaveState(state StateData) error {
 }
 
 func (sd StateData) GetPageState(rootPath, relPath string) *PageState {
-	syncState, ok := sd[rootPath]
+	syncState, ok := sd.lookupSyncState(rootPath)
 	if !ok {
 		return nil
 	}
@@ -69,8 +69,47 @@ func (sd StateData) GetPageState(rootPath, relPath string) *PageState {
 }
 
 func (sd StateData) SetPageState(rootPath, relPath string, ps PageState) {
+	sd.migrateEquivalentRootKey(rootPath)
 	if sd[rootPath] == nil {
 		sd[rootPath] = SyncState{}
 	}
 	sd[rootPath][relPath] = ps
+}
+
+// lookupSyncState finds the sync map for rootPath, including a stored key that
+// only differs by case (e.g. legacy state.json from before path canonicalization).
+func (sd StateData) lookupSyncState(rootPath string) (SyncState, bool) {
+	if ss, ok := sd[rootPath]; ok {
+		return ss, true
+	}
+	for k, ss := range sd {
+		if pathsEquivalentForSync(k, rootPath) {
+			return ss, true
+		}
+	}
+	return nil, false
+}
+
+// migrateEquivalentRootKey collapses a case-variant key into rootPath so new
+// writes use one canonical spelling.
+func (sd StateData) migrateEquivalentRootKey(rootPath string) {
+	for k := range sd {
+		if k == rootPath {
+			return
+		}
+		if !pathsEquivalentForSync(k, rootPath) {
+			continue
+		}
+		if sd[rootPath] == nil {
+			sd[rootPath] = sd[k]
+		} else {
+			for rel, p := range sd[k] {
+				if _, exists := sd[rootPath][rel]; !exists {
+					sd[rootPath][rel] = p
+				}
+			}
+		}
+		delete(sd, k)
+		return
+	}
 }
