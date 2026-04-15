@@ -17,7 +17,7 @@ type ConfluencePage struct {
 	SpaceID string `json:"spaceId"`
 	Body    struct {
 		Storage struct {
-			Value         string `json:"value"`
+			Value          string `json:"value"`
 			Representation string `json:"representation"`
 		} `json:"storage"`
 	} `json:"body"`
@@ -100,8 +100,11 @@ func (c *ConfluenceClient) GetPage(pageID string) (*ConfluencePage, error) {
 		ConfluencePage
 	}
 
+	// include-version ensures the current version number is present (listing APIs often omit it).
+	path := "/pages/" + pageID + "?include-version=true"
+
 	err := retryWithBackoff(3, 1*time.Second, func() error {
-		data, err := c.doRequest("GET", "/pages/"+pageID, nil)
+		data, err := c.doRequest("GET", path, nil)
 		if err != nil {
 			return err
 		}

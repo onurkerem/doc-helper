@@ -13,6 +13,7 @@ func main() {
 	var excludes []string
 	var confluence bool
 	var dryRun bool
+	var force bool
 
 	args := os.Args[1:]
 	for i := 0; i < len(args); i++ {
@@ -28,6 +29,8 @@ func main() {
 			confluence = true
 		case "--dry-run":
 			dryRun = true
+		case "--force":
+			force = true
 		default:
 			if root != "" {
 				fmt.Fprintf(os.Stderr, "Error: unexpected argument %s\n", args[i])
@@ -38,7 +41,12 @@ func main() {
 	}
 
 	if root == "" {
-		fmt.Fprintf(os.Stderr, "Usage: doc-helper <path> [--exclude <dir>[,<dir>...]] [--confluence] [--dry-run]\n")
+		fmt.Fprintf(os.Stderr, "Usage: doc-helper <path> [--exclude <dir>[,<dir>...]] [--confluence] [--dry-run] [--force]\n")
+		os.Exit(1)
+	}
+
+	if force && !confluence {
+		fmt.Fprintf(os.Stderr, "Error: --force is only valid with --confluence\n")
 		os.Exit(1)
 	}
 
@@ -69,7 +77,7 @@ func main() {
 	// Confluence sync
 	if confluence {
 		absRoot, _ := filepath.Abs(root)
-		if err := runConfluenceSync(absRoot, excludes, dryRun); err != nil {
+		if err := runConfluenceSync(absRoot, excludes, dryRun, force); err != nil {
 			fmt.Fprintf(os.Stderr, "Confluence sync error: %v\n", err)
 			os.Exit(1)
 		}
@@ -101,7 +109,7 @@ func copyToClipboard(root string, result *ScanResult) {
 	fmt.Printf("Copied %d markdown file(s) to clipboard.\n", len(result.Files))
 }
 
-func runConfluenceSync(absRoot string, excludes []string, dryRun bool) error {
+func runConfluenceSync(absRoot string, excludes []string, dryRun, force bool) error {
 	cfg, err := LoadConfig()
 	if err != nil {
 		return fmt.Errorf("loading config: %w", err)
@@ -112,5 +120,5 @@ func runConfluenceSync(absRoot string, excludes []string, dryRun bool) error {
 		return fmt.Errorf("path %s is not configured for Confluence sync. Add it to %s", absRoot, ConfigPath())
 	}
 
-	return RunSync(syncCfg, absRoot, excludes, dryRun)
+	return RunSync(syncCfg, absRoot, excludes, dryRun, force)
 }

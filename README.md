@@ -15,7 +15,7 @@ curl -fsSL https://raw.githubusercontent.com/onurkerem/doc-helper/main/install.s
 ## Usage
 
 ```bash
-doc-helper <path> [--exclude <dir>[,<dir>...]] [--confluence] [--dry-run]
+doc-helper <path> [--exclude <dir>[,<dir>...]] [--confluence] [--dry-run] [--force]
 ```
 
 Output copied to clipboard:
@@ -48,7 +48,10 @@ Use `--confluence` to sync your markdown files as Confluence pages alongside the
 ```bash
 doc-helper ~/my-docs --confluence
 doc-helper ~/my-docs --confluence --dry-run   # preview without creating pages
+doc-helper ~/my-docs --confluence --force       # re-upload all pages (ignore content hash)
 ```
+
+`--force` only applies with `--confluence`. Use it after changing doc-helper’s conversion logic (for example) so every page is pushed again even when the markdown files are unchanged.
 
 Given this directory structure:
 
@@ -113,8 +116,10 @@ Page titles come from the first `# Heading` in each file. Directories become emp
 - On first run, pages are created under the configured parent page
 - On subsequent runs, only changed files are updated (tracked by content hash)
 - State is stored in `~/.doc-helper/state.json` (auto-managed)
-- If state is lost, existing pages are detected by title to avoid duplicates
+- If state is lost, existing pages are detected by title to avoid duplicates; the live Confluence page version is read before each update (list endpoints do not always include version metadata)
 - `--dry-run` shows what would happen without making API calls
+- `--confluence --force` skips the “unchanged file” hash check and updates every markdown-backed page
+- Fenced code blocks in markdown (GitHub-style triple-backtick fences with an optional language) are published as Confluence **Code Block** macros (native code snippets: syntax highlighting and copy). Inline backtick code is left as normal formatted text.
 
 ## License
 

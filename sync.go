@@ -7,7 +7,36 @@ import (
 	"strings"
 )
 
-func RunSync(cfg *SyncConfig, rootPath string, excludes []string, dryRun bool) error {
+// tryUpdateConfluencePage updates page body. Confluence expects the *current* version number;
+// the client sends current+1 in the request body. If storedVersion is 0 (e.g. pages from
+// GET .../children omit version), the latest version is loaded with GetPage first.
+func tryUpdateConfluencePage(client *ConfluenceClient, pageID, title, html string, storedVersion int) (*ConfluencePage, error) {
+	version := storedVersion
+	if version <= 0 {
+		current, err := client.GetPage(pageID)
+		if err != nil {
+			return nil, err
+		}
+		if current == nil {
+			return nil, fmt.Errorf("page not found: %s", pageID)
+		}
+		version = current.Version.Number
+		if version <= 0 {
+			return nil, fmt.Errorf("could not determine version for page %s", pageID)
+		}
+	}
+
+	page, err := client.UpdatePage(pageID, title, html, version)
+	if err != nil && (strings.Contains(err.Error(), "409") || strings.Contains(err.Error(), "Conflict")) {
+		current, fetchErr := client.GetPage(pageID)
+		if fetchErr == nil && current != nil && current.Version.Number > 0 {
+			page, err = client.UpdatePage(pageID, title, html, current.Version.Number)
+		}
+	}
+	return page, err
+}
+
+func RunSync(cfg *SyncConfig, rootPath string, excludes []string, dryRun, force bool) error {
 	result, err := ScanDirectory(rootPath, excludes)
 	if err != nil {
 		return fmt.Errorf("scanning directory: %w", err)
@@ -31,7 +60,11 @@ func RunSync(cfg *SyncConfig, rootPath string, excludes []string, dryRun bool) e
 	}
 	spaceID := parentPage.SpaceID
 
-	fmt.Printf("Confluence sync: %s → space %s, parent page %s\n", rootPath, spaceID, cfg.ParentPageID)
+	if force {
+		fmt.Printf("Confluence sync (forced): %s → space %s, parent page %s\n", rootPath, spaceID, cfg.ParentPageID)
+	} else {
+		fmt.Printf("Confluence sync: %s → space %s, parent page %s\n", rootPath, spaceID, cfg.ParentPageID)
+	}
 
 	created := 0
 	updated := 0
@@ -130,8 +163,8 @@ func RunSync(cfg *SyncConfig, rootPath string, excludes []string, dryRun bool) e
 	for _, file := range result.Files {
 		existing := state.GetPageState(rootPath, file.RelPath)
 
-		// Check if content unchanged
-		if existing != nil && existing.ContentHash == file.ContentHash {
+		// Check if content unchanged (unless forcing a full re-upload)
+		if !force && existing != nil && existing.ContentHash == file.ContentHash {
 			skipped++
 			continue
 		}
@@ -139,8 +172,8 @@ func RunSync(cfg *SyncConfig, rootPath string, excludes []string, dryRun bool) e
 		// Find parent page ID
 		parentID := getParentPageID(file.ParentDir)
 
-		// Convert markdown to HTML
-		html, err := converter.Convert(file.Content)
+		// Convert markdown to Confluence storage (fenced code → Code Block macro)
+		html, err := converter.ConvertForConfluence(file.Content)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "  Error converting %s: %v\n", file.RelPath, err)
 			continue
@@ -162,19 +195,10 @@ func RunSync(cfg *SyncConfig, rootPath string, excludes []string, dryRun bool) e
 
 		if existing != nil {
 			// Update existing page
-			page, err := client.UpdatePage(existing.PageID, title, html, existing.Version)
+			page, err := tryUpdateConfluencePage(client, existing.PageID, title, html, existing.Version)
 			if err != nil {
-				// Version conflict — fetch current version and retry
-				if strings.Contains(err.Error(), "409") || strings.Contains(err.Error(), "Conflict") {
-					currentPage, fetchErr := client.GetPage(existing.PageID)
-					if fetchErr == nil && currentPage != nil {
-						page, err = client.UpdatePage(existing.PageID, title, html, currentPage.Version.Number)
-					}
-				}
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "  Error updating %s: %v\n", file.RelPath, err)
-					continue
-				}
+				fmt.Fprintf(os.Stderr, "  Error updating %s: %v\n", file.RelPath, err)
+				continue
 			}
 
 			state.SetPageState(rootPath, file.RelPath, PageState{
@@ -191,8 +215,8 @@ func RunSync(cfg *SyncConfig, rootPath string, excludes []string, dryRun bool) e
 			existingPage := findPageByTitle(parentID, title)
 
 			if existingPage != nil {
-				// Update the existing page
-				page, err := client.UpdatePage(existingPage.ID, title, html, existingPage.Version.Number)
+				// Child listing responses omit version; Version is 0 — resolve via GetPage first.
+				page, err := tryUpdateConfluencePage(client, existingPage.ID, title, html, existingPage.Version.Number)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "  Error updating existing %s: %v\n", file.RelPath, err)
 					continue
