@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -95,6 +97,23 @@ func (c *ConfluenceClient) doRequest(method, path string, payload any) ([]byte, 
 
 var errNotFound = fmt.Errorf("page not found")
 
+// shouldRetryConfluenceWrite is true for rate limits, server errors, and transport failures.
+// Client errors such as 409 Conflict are not retried with the same payload.
+func shouldRetryConfluenceWrite(err error) bool {
+	if err == nil {
+		return false
+	}
+	var code int
+	if n, _ := fmt.Sscanf(err.Error(), "API error %d:", &code); n == 1 {
+		return code == 429 || code >= 500
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "making request:") ||
+		strings.Contains(msg, "timeout") ||
+		strings.Contains(msg, "connection reset") ||
+		strings.Contains(msg, "EOF")
+}
+
 func (c *ConfluenceClient) GetPage(pageID string) (*ConfluencePage, error) {
 	var result struct {
 		ConfluencePage
@@ -174,20 +193,29 @@ func (c *ConfluenceClient) UpdatePage(pageID, title, body string, version int) (
 	}
 
 	var result ConfluencePage
+	const maxRetries = 3
+	baseDelay := 1 * time.Second
+	var lastErr error
 
-	err := retryWithBackoff(3, 1*time.Second, func() error {
+	for attempt := 0; attempt <= maxRetries; attempt++ {
 		data, err := c.doRequest("PUT", "/pages/"+pageID, payload)
-		if err != nil {
-			return err
+		if err == nil {
+			if err := json.Unmarshal(data, &result); err != nil {
+				return nil, err
+			}
+			return &result, nil
 		}
-		return json.Unmarshal(data, &result)
-	})
-
-	if err != nil {
-		return nil, err
+		lastErr = err
+		if attempt < maxRetries && shouldRetryConfluenceWrite(err) {
+			delay := baseDelay * time.Duration(1<<uint(attempt))
+			fmt.Fprintf(os.Stderr, "  Retry %d/%d after %v: %v\n", attempt+1, maxRetries, delay, err)
+			time.Sleep(delay)
+			continue
+		}
+		break
 	}
 
-	return &result, nil
+	return nil, lastErr
 }
 
 func (c *ConfluenceClient) GetChildPages(parentID string) ([]ConfluencePage, error) {

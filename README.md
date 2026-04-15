@@ -116,7 +116,7 @@ Page titles come from the first `# Heading` in each file. Directories become emp
 - On first run, pages are created under the configured parent page
 - On subsequent runs, only changed files are updated (tracked by content hash)
 - State is stored in `~/.doc-helper/state.json` (auto-managed)
-- If state is lost, existing pages are detected by title to avoid duplicates; the live Confluence page version is read before each update (list endpoints do not always include version metadata)
+- If state is lost, existing pages are detected by title to avoid duplicates. Before every update, the live Confluence page is fetched so the correct version number is used (cached state can be stale after edits in Confluence or interrupted runs; list endpoints do not always include version metadata)
 - `--dry-run` shows what would happen without making API calls
 - `--confluence --force` skips the “unchanged file” hash check and updates every markdown-backed page
 - Fenced code blocks in markdown (GitHub-style triple-backtick fences with an optional language) are published as Confluence **Code Block** macros (native code snippets: syntax highlighting and copy). Inline backtick code is left as normal formatted text.

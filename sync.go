@@ -7,30 +7,26 @@ import (
 	"strings"
 )
 
-// tryUpdateConfluencePage updates page body. Confluence expects the *current* version number;
-// the client sends current+1 in the request body. If storedVersion is 0 (e.g. pages from
-// GET .../children omit version), the latest version is loaded with GetPage first.
-func tryUpdateConfluencePage(client *ConfluenceClient, pageID, title, html string, storedVersion int) (*ConfluencePage, error) {
-	version := storedVersion
-	if version <= 0 {
-		current, err := client.GetPage(pageID)
-		if err != nil {
-			return nil, err
-		}
-		if current == nil {
-			return nil, fmt.Errorf("page not found: %s", pageID)
-		}
-		version = current.Version.Number
-		if version <= 0 {
-			return nil, fmt.Errorf("could not determine version for page %s", pageID)
-		}
+// tryUpdateConfluencePage updates page body. Confluence requires the next version number
+// (current server version + 1). Cached state can be stale after edits in Confluence or
+// interrupted runs, so we always GetPage first instead of trusting ~/.doc-helper/state.json.
+func tryUpdateConfluencePage(client *ConfluenceClient, pageID, title, html string) (*ConfluencePage, error) {
+	current, err := client.GetPage(pageID)
+	if err != nil {
+		return nil, err
+	}
+	if current == nil {
+		return nil, fmt.Errorf("page not found: %s", pageID)
+	}
+	if current.Version.Number <= 0 {
+		return nil, fmt.Errorf("could not determine version for page %s", pageID)
 	}
 
-	page, err := client.UpdatePage(pageID, title, html, version)
+	page, err := client.UpdatePage(pageID, title, html, current.Version.Number)
 	if err != nil && (strings.Contains(err.Error(), "409") || strings.Contains(err.Error(), "Conflict")) {
-		current, fetchErr := client.GetPage(pageID)
-		if fetchErr == nil && current != nil && current.Version.Number > 0 {
-			page, err = client.UpdatePage(pageID, title, html, current.Version.Number)
+		current2, fetchErr := client.GetPage(pageID)
+		if fetchErr == nil && current2 != nil && current2.Version.Number > 0 {
+			page, err = client.UpdatePage(pageID, title, html, current2.Version.Number)
 		}
 	}
 	return page, err
@@ -195,7 +191,7 @@ func RunSync(cfg *SyncConfig, rootPath string, excludes []string, dryRun, force 
 
 		if existing != nil {
 			// Update existing page
-			page, err := tryUpdateConfluencePage(client, existing.PageID, title, html, existing.Version)
+			page, err := tryUpdateConfluencePage(client, existing.PageID, title, html)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "  Error updating %s: %v\n", file.RelPath, err)
 				continue
@@ -216,7 +212,7 @@ func RunSync(cfg *SyncConfig, rootPath string, excludes []string, dryRun, force 
 
 			if existingPage != nil {
 				// Child listing responses omit version; Version is 0 — resolve via GetPage first.
-				page, err := tryUpdateConfluencePage(client, existingPage.ID, title, html, existingPage.Version.Number)
+				page, err := tryUpdateConfluencePage(client, existingPage.ID, title, html)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "  Error updating existing %s: %v\n", file.RelPath, err)
 					continue
