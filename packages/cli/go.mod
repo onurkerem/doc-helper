@@ -1,4 +1,4 @@
-module github.com/onurkerem/doc-helper/cli
+module github.com/onurkerem/doc-helper/packages/cli
 
 go 1.24
 
