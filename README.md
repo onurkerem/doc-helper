@@ -8,7 +8,7 @@ A CLI tool to concatenate markdown files and sync them to Confluence.
 doc-helper/
 ├── packages/
 │   ├── cli/        # Go CLI tool — concatenate & sync markdown to Confluence
-│   └── website/    # Marketing website (Astro) — coming soon
+│   └── website/    # Marketing website (Astro)
 ├── LICENSE
 └── README.md
 ```
@@ -16,7 +16,7 @@ doc-helper/
 ## Packages
 
 - **[packages/cli](packages/cli/)** — The doc-helper CLI. Concatenates all markdown files in a directory and copies to clipboard, or syncs them as Confluence pages preserving directory hierarchy.
-- **[packages/website](packages/website/)** — Marketing website. Coming soon.
+- **[packages/website](packages/website/)** — Marketing website for doc-helper.
 
 ## Quick Start
 

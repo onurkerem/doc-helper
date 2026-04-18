@@ -2,16 +2,15 @@
 import Layout from "../layouts/Layout.astro";
 
 const configJson = `{
-  "confluence": {
-    "baseUrl": "https://your-domain.atlassian.net",
-    "spaceKey": "DEV",
-    "parentPageId": "123456789",
-    "userEmail": "user@domain.com"
-  },
-  "sync": {
-    "rootDir": "./docs",
-    "exclude": [".git", "node_modules", "drafts"]
-  }
+  "syncs": [
+    {
+      "path": "/Users/you/my-docs",
+      "confluence_base_url": "https://yourcompany.atlassian.net/wiki",
+      "email": "you@company.com",
+      "api_token": "YOUR_API_TOKEN",
+      "parent_page_id": "123456"
+    }
+  ]
 }`;
 ---
 
@@ -108,16 +107,16 @@ const configJson = `{
       <div class="w-full lg:w-1/2">
         <h2 class="text-3xl md:text-4xl font-headline font-bold mb-6 text-on-surface tracking-tight">Usage</h2>
         <p class="font-body text-lg text-on-surface-variant mb-8 leading-relaxed">
-          Execute doc-helper from your project root. Use flags to customize the build, exclude directories, or dry-run the sync process.
+          Point doc-helper at a directory. It concatenates all markdown files and copies the result to your clipboard. Use flags to exclude directories, sync to Confluence, or dry-run.
         </p>
         <div class="space-y-4">
           <div class="flex items-start gap-3">
             <span class="material-symbols-outlined text-tertiary mt-1">check_circle</span>
-            <p class="font-body text-on-surface-variant">Compile all markdown in the current directory.</p>
+            <p class="font-body text-on-surface-variant">Concatenate and copy all markdown in a directory.</p>
           </div>
           <div class="flex items-start gap-3">
             <span class="material-symbols-outlined text-tertiary mt-1">check_circle</span>
-            <p class="font-body text-on-surface-variant">Exclude specific paths from the build.</p>
+            <p class="font-body text-on-surface-variant">Exclude specific directories from the scan.</p>
           </div>
         </div>
       </div>
@@ -128,16 +127,16 @@ const configJson = `{
           </div>
           <div class="font-mono text-sm space-y-4">
             <div>
-              <span class="text-on-surface-variant opacity-70"># Basic concatenation</span><br />
-              <span class="text-tertiary-fixed">$</span> <span class="text-inverse-on-surface">doc-helper build</span>
+              <span class="text-on-surface-variant opacity-70"># Concatenate all markdown in a directory</span><br />
+              <span class="text-tertiary-fixed">$</span> <span class="text-inverse-on-surface">doc-helper ~/my-docs</span>
             </div>
             <div>
-              <span class="text-on-surface-variant opacity-70"># Build and copy to clipboard</span><br />
-              <span class="text-tertiary-fixed">$</span> <span class="text-inverse-on-surface">doc-helper build --copy</span>
+              <span class="text-on-surface-variant opacity-70"># Exclude directories</span><br />
+              <span class="text-tertiary-fixed">$</span> <span class="text-inverse-on-surface">doc-helper ~/my-docs --exclude node_modules,.git</span>
             </div>
             <div>
-              <span class="text-on-surface-variant opacity-70"># Sync to Confluence, excluding drafts</span><br />
-              <span class="text-tertiary-fixed">$</span> <span class="text-inverse-on-surface">doc-helper sync --exclude "./drafts"</span>
+              <span class="text-on-surface-variant opacity-70"># Sync to Confluence (dry-run preview)</span><br />
+              <span class="text-tertiary-fixed">$</span> <span class="text-inverse-on-surface">doc-helper ~/my-docs --confluence --dry-run</span>
             </div>
           </div>
         </div>
@@ -152,7 +151,7 @@ const configJson = `{
         Hierarchy Mapping
       </h2>
       <p class="font-body text-lg text-on-surface-variant mb-16 text-center max-w-3xl mx-auto">
-        doc-helper reads your local folder structure and mirrors it in Confluence. <code class="bg-surface-container px-1 py-0.5 rounded text-on-surface text-base">overview.md</code> files act as the parent page for their respective directories.
+        doc-helper reads your local folder structure and mirrors it in Confluence. Directories become container pages; each markdown file becomes a child page with its title from the first <code class="bg-surface-container px-1 py-0.5 rounded text-on-surface text-base"># Heading</code>.
       </p>
       <div class="bg-surface-container-lowest p-12 border border-surface-container-highest flex flex-col md:flex-row gap-12 items-stretch">
         <!-- Local Structure -->
@@ -160,22 +159,25 @@ const configJson = `{
           <h4 class="font-headline font-bold text-on-surface mb-6 border-b border-surface-container-highest pb-2">Local Directory</h4>
           <div class="font-mono text-sm text-on-surface-variant space-y-2">
             <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-base">folder</span> docs/
+              <span class="material-symbols-outlined text-base">folder</span> my-docs/
             </div>
             <div class="flex items-center gap-2 ml-4 text-tertiary">
               <span class="material-symbols-outlined text-base">description</span> overview.md
             </div>
             <div class="flex items-center gap-2 ml-4">
-              <span class="material-symbols-outlined text-base">folder</span> api/
+              <span class="material-symbols-outlined text-base">folder</span> getting-started/
             </div>
             <div class="flex items-center gap-2 ml-8">
-              <span class="material-symbols-outlined text-base">description</span> overview.md
+              <span class="material-symbols-outlined text-base">description</span> installation.md
             </div>
             <div class="flex items-center gap-2 ml-8">
-              <span class="material-symbols-outlined text-base">description</span> endpoints.md
+              <span class="material-symbols-outlined text-base">description</span> configuration.md
             </div>
             <div class="flex items-center gap-2 ml-4">
-              <span class="material-symbols-outlined text-base">description</span> setup.md
+              <span class="material-symbols-outlined text-base">folder</span> guides/
+            </div>
+            <div class="flex items-center gap-2 ml-8">
+              <span class="material-symbols-outlined text-base">description</span> api-usage.md
             </div>
           </div>
         </div>
@@ -192,17 +194,29 @@ const configJson = `{
           <h4 class="font-headline font-bold text-on-surface mb-6 border-b border-surface-container-highest pb-2">Confluence Pages</h4>
           <div class="font-body text-sm text-on-surface-variant space-y-3">
             <div class="flex items-center gap-2 text-tertiary font-medium">
-              <span class="material-symbols-outlined text-base">article</span> Docs Overview (Parent)
+              <span class="material-symbols-outlined text-base">article</span> Documentation (parent, existing)
             </div>
             <div class="flex flex-col gap-3 ml-6 border-l-2 border-surface-container pl-4">
               <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-base">article</span> API Overview
-              </div>
-              <div class="flex items-center gap-2 ml-6 text-on-surface-variant">
-                <span class="material-symbols-outlined text-base text-surface-variant">horizontal_rule</span> Endpoints
+                <span class="material-symbols-outlined text-base">article</span> Overview
+                <span class="text-xs text-on-surface-variant/50 ml-1">(overview.md)</span>
               </div>
               <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-base">article</span> Setup Guide
+                <span class="material-symbols-outlined text-base">folder_open</span> getting-started
+                <span class="text-xs text-on-surface-variant/50 ml-1">(container)</span>
+              </div>
+              <div class="flex items-center gap-2 ml-6">
+                <span class="material-symbols-outlined text-base">article</span> Installation
+              </div>
+              <div class="flex items-center gap-2 ml-6">
+                <span class="material-symbols-outlined text-base">article</span> Configuration
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-base">folder_open</span> guides
+                <span class="text-xs text-on-surface-variant/50 ml-1">(container)</span>
+              </div>
+              <div class="flex items-center gap-2 ml-6">
+                <span class="material-symbols-outlined text-base">article</span> API Usage
               </div>
             </div>
           </div>
@@ -218,13 +232,13 @@ const configJson = `{
         Simple Configuration
       </h2>
       <p class="font-body text-lg text-on-surface-variant mb-12">
-        Set up your <code class="bg-surface-container px-1 py-0.5 rounded text-on-surface">doc-helper.json</code> file in the root of your project and provide your Confluence credentials.
+        Create <code class="bg-surface-container px-1 py-0.5 rounded text-on-surface">~/.doc-helper/config.json</code> with your Confluence credentials and the path to your docs directory.
       </p>
       <div class="bg-surface-container-low p-8 border border-outline-variant/15 text-left inline-block w-full max-w-2xl">
         <pre class="font-mono text-sm text-on-surface overflow-x-auto"><code set:html={configJson} /></pre>
       </div>
       <p class="font-body text-sm text-on-surface-variant mt-6">
-        Requires <code class="bg-surface-container px-1 py-0.5 rounded text-on-surface">CONFLUENCE_API_TOKEN</code> set in your environment variables.
+        Get your API token at <code class="bg-surface-container px-1 py-0.5 rounded text-on-surface">id.atlassian.com/manage-profile/security/api-tokens</code>
       </p>
     </div>
   </section>

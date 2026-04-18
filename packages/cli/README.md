@@ -77,7 +77,7 @@ Documentation (existing, not modified)
     └── API Usage           (content from api-usage.md)
 ```
 
-Page titles come from the first `# Heading` in each file. Directories become empty container pages.
+Page titles come from the first `# Heading` in each file (falls back to the filename with dashes/underscores replaced by spaces, title-cased). Directories become empty container pages.
 
 #### Setup
 
