@@ -1,16 +1,19 @@
-# Binaries
-doc-helper
+# CLI
+packages/cli/doc-helper
 
-# Build
-/dist/
+# Website
+packages/website/node_modules/
+packages/website/dist/
+packages/website/.astro/
 
 # OS
 .DS_Store
 
 # IDE
 .cursor/
+.idea/
+.vscode/
 
-
+# Temp
 temp/
-
 .mcp.json
