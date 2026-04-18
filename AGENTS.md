@@ -46,3 +46,8 @@ cd packages/website && npm run build
     - all AGENTS.md files
     - @packages/cli/install.sh
     - the website project
+- We want install.sh to work each case:
+    - first time installation
+    - updating to the latest version
+    - no prerequisites installed 
+    - prerequisites installed but not in the PATH
