@@ -184,8 +184,8 @@ const configJson = `{
         <!-- Connector -->
         <div class="hidden md:flex flex-col items-center justify-center text-surface-container-highest">
           <div class="h-full w-px bg-surface-container-highest"></div>
-          <div class="bg-surface-container-lowest p-2 border border-surface-container-highest rounded-full my-4">
-            <span class="material-symbols-outlined text-on-surface-variant">arrow_forward</span>
+          <div class="bg-surface-container-lowest p-2 border border-surface-container-highest rounded-full my-4 flex items-center justify-center">
+            <span class="material-symbols-outlined text-on-surface-variant leading-none">arrow_forward</span>
           </div>
           <div class="h-full w-px bg-surface-container-highest"></div>
         </div>
@@ -238,7 +238,16 @@ const configJson = `{
         <pre class="font-mono text-sm text-on-surface overflow-x-auto"><code set:html={configJson} /></pre>
       </div>
       <p class="font-body text-sm text-on-surface-variant mt-6">
-        Get your API token at <code class="bg-surface-container px-1 py-0.5 rounded text-on-surface">id.atlassian.com/manage-profile/security/api-tokens</code>
+        Get your API token at
+        <a
+          href="https://id.atlassian.com/manage-profile/security/api-tokens"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 bg-surface-container px-2 py-0.5 rounded text-on-surface hover:bg-surface-container-high transition-colors group"
+        >
+          <code>id.atlassian.com/manage-profile/security/api-tokens</code>
+          <span class="material-symbols-outlined text-sm text-on-surface-variant group-hover:text-on-surface transition-colors" style="font-size:14px">open_in_new</span>
+        </a>
       </p>
     </div>
   </section>
