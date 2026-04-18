@@ -17,3 +17,7 @@ packages/website/.astro/
 # Temp
 temp/
 .mcp.json
+
+.agents
+.claude
+skills-lock.json
