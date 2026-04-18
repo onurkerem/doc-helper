@@ -41,6 +41,8 @@ cd packages/website && npm run build
 
 ## Guidelines
 
-- After changes, keep README.md files up to date.
-
-Skill: agents-md-generator (external)
+- After changes, keep these up to date:
+    - all README.md files
+    - all AGENTS.md files
+    - @packages/cli/install.sh
+    - the website project
