@@ -1,6 +1,6 @@
 #!/bin/bash
 # Install or update doc-helper
-# Usage: curl -fsSL https://raw.githubusercontent.com/onurkerem/doc-helper/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/onurkerem/doc-helper/main/packages/cli/install.sh | bash
 
 set -e
 
@@ -14,6 +14,7 @@ GOBIN="$(go env GOPATH)/bin"
 
 echo "Installing doc-helper..."
 GOPROXY=direct go install github.com/onurkerem/doc-helper/packages/cli@latest
+mv -f "$GOBIN/cli" "$GOBIN/doc-helper"
 
 if ! grep -q 'go/bin' ~/.zshrc 2>/dev/null; then
 	printf '\nexport PATH="$HOME/go/bin:$PATH"\n' >> ~/.zshrc
