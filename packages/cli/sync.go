@@ -32,8 +32,8 @@ func tryUpdateConfluencePage(client *ConfluenceClient, pageID, title, html strin
 	return page, err
 }
 
-func RunSync(cfg *SyncConfig, rootPath string, excludes []string, dryRun, force bool) error {
-	result, err := ScanDirectory(rootPath, excludes)
+func RunSync(cfg *SyncConfig, rootPath string, dirExcludes []string, fileExcludes []string, dryRun, force bool) error {
+	result, err := ScanDirectory(rootPath, dirExcludes, fileExcludes)
 	if err != nil {
 		return fmt.Errorf("scanning directory: %w", err)
 	}

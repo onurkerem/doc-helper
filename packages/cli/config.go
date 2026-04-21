@@ -8,11 +8,12 @@ import (
 )
 
 type SyncConfig struct {
-	Path             string `json:"path"`
-	ConfluenceBaseURL string `json:"confluence_base_url"`
-	Email            string `json:"email"`
-	APIToken         string `json:"api_token"`
-	ParentPageID     string `json:"parent_page_id"`
+	Path              string   `json:"path"`
+	ConfluenceBaseURL string   `json:"confluence_base_url"`
+	Email             string   `json:"email"`
+	APIToken          string   `json:"api_token"`
+	ParentPageID      string   `json:"parent_page_id"`
+	ExcludeFiles      []string `json:"exclude_files"`
 }
 
 type Config struct {

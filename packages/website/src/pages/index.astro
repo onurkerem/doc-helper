@@ -8,7 +8,8 @@ const configJson = `{
       "confluence_base_url": "https://yourcompany.atlassian.net/wiki",
       "email": "you@company.com",
       "api_token": "YOUR_API_TOKEN",
-      "parent_page_id": "123456"
+      "parent_page_id": "123456",
+      "exclude_files": ["CLAUDE.md", "AGENTS.md"]
     }
   ]
 }`;
@@ -107,7 +108,7 @@ const configJson = `{
       <div class="w-full lg:w-1/2">
         <h2 class="text-3xl md:text-4xl font-headline font-bold mb-6 text-on-surface tracking-tight">Usage</h2>
         <p class="font-body text-lg text-on-surface-variant mb-8 leading-relaxed">
-          Point doc-helper at a directory. It concatenates all markdown files and copies the result to your clipboard. Use flags to exclude directories, sync to Confluence, or dry-run.
+          Point doc-helper at a directory. It concatenates all markdown files and copies the result to your clipboard. Use flags to exclude directories, sync to Confluence, or dry-run. Exclude specific files by name via config.
         </p>
         <div class="space-y-4">
           <div class="flex items-start gap-3">
@@ -117,6 +118,10 @@ const configJson = `{
           <div class="flex items-start gap-3">
             <span class="material-symbols-outlined text-tertiary mt-1">check_circle</span>
             <p class="font-body text-on-surface-variant">Exclude specific directories from the scan.</p>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="material-symbols-outlined text-tertiary mt-1">check_circle</span>
+            <p class="font-body text-on-surface-variant">Exclude files by name (e.g. CLAUDE.md) via config.</p>
           </div>
         </div>
       </div>

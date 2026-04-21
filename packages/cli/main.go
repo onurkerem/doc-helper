@@ -60,7 +60,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	result, err := ScanDirectory(root, excludes)
+	result, err := ScanDirectory(root, excludes, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error scanning directory: %v\n", err)
 		os.Exit(1)
@@ -127,5 +127,5 @@ func runConfluenceSync(absRoot string, excludes []string, dryRun, force bool) er
 		return fmt.Errorf("path %s is not configured for Confluence sync. Add it to %s", absRoot, ConfigPath())
 	}
 
-	return RunSync(syncCfg, absRoot, excludes, dryRun, force)
+	return RunSync(syncCfg, absRoot, excludes, syncCfg.ExcludeFiles, dryRun, force)
 }

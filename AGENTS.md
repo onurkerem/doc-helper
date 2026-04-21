@@ -45,7 +45,8 @@ cd packages/website && npm run build
     - all README.md files
     - all AGENTS.md files
     - @packages/cli/install.sh
-    - the website project
+    - the website project (config examples, feature descriptions, usage text)
+- **Website changes are part of every feature.** Any change to CLI flags, config structure, or documented behavior must be reflected in the website (`packages/website/src/pages/index.astro`). Do not treat the website as a separate task — it is part of the feature scope.
 - We want install.sh to work each case:
     - first time installation
     - updating to the latest version

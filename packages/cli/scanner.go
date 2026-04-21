@@ -28,7 +28,7 @@ type ScanResult struct {
 	Files       []ScannedFile
 }
 
-func ScanDirectory(rootPath string, excludes []string) (*ScanResult, error) {
+func ScanDirectory(rootPath string, dirExcludes []string, fileExcludes []string) (*ScanResult, error) {
 	result := &ScanResult{}
 
 	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
@@ -39,7 +39,7 @@ func ScanDirectory(rootPath string, excludes []string) (*ScanResult, error) {
 		relPath, _ := filepath.Rel(rootPath, path)
 
 		if d.IsDir() {
-			if path != rootPath && slices.Contains(excludes, d.Name()) {
+			if path != rootPath && slices.Contains(dirExcludes, d.Name()) {
 				return fs.SkipDir
 			}
 			if path != rootPath {
@@ -52,6 +52,10 @@ func ScanDirectory(rootPath string, excludes []string) (*ScanResult, error) {
 		}
 
 		if !strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
+			return nil
+		}
+
+		if slices.Contains(fileExcludes, d.Name()) {
 			return nil
 		}
 

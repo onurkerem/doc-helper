@@ -97,7 +97,8 @@ Page titles come from the first `# Heading` in each file (falls back to the file
          "confluence_base_url": "https://yourcompany.atlassian.net/wiki",
          "email": "you@company.com",
          "api_token": "YOUR_API_TOKEN",
-         "parent_page_id": "123456"
+         "parent_page_id": "123456",
+         "exclude_files": ["CLAUDE.md", "AGENTS.md"]
        }
      ]
    }
@@ -110,6 +111,14 @@ Page titles come from the first `# Heading` in each file (falls back to the file
 4. Find the parent page ID from the page URL:
    - `https://yourcompany.atlassian.net/wiki/spaces/PROJ/pages/123456/Page+Title`
    - The page ID is `123456`
+
+#### Exclude files
+
+Use `exclude_files` in config to skip specific file names during Confluence sync. Matching is by exact file name (case-sensitive) at any directory depth.
+
+```json
+"exclude_files": ["CLAUDE.md", "AGENTS.md"]
+```
 
 #### How it works
 
